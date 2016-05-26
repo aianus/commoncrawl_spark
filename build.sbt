@@ -4,10 +4,11 @@ version := "1.0"
 
 scalaVersion := "2.11.8"
 
-
-
-libraryDependencies += "org.apache.spark" %% "spark-core" % "1.6.1"
-libraryDependencies += "com.martinkl.warc" % "warc-hadoop" % "0.1.0"
+libraryDependencies += "org.apache.spark" %% "spark-core" % "1.6.1" % "provided"
+libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "2.2.0" % "provided"
+libraryDependencies += ("com.martinkl.warc" % "warc-hadoop" % "0.1.0").excludeAll(
+  ExclusionRule(organization = "org.apache.hadoop")
+)
 libraryDependencies += "org.jsoup" % "jsoup" % "1.9.2"
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % "1.7.10",

@@ -9,19 +9,18 @@ import org.apache.hadoop.io.LongWritable
 
 object CommoncrawlWappalyzer {
   def main(args: Array[String]) {
-    // TODO(aianus) use options to load from S3
-    val lulz = "/Users/aianus/src/commoncrawl_spark/common-crawl/crawl-data/CC-MAIN-2014-35/segments/1408500800168.29/warc/CC-MAIN-20140820021320-00000-ip-10-180-136-8.ec2.internal.warc.gz"
-
     val conf = new SparkConf().setAppName("CommoncrawlWappalyzer")
     val sc = new SparkContext
     val warc = sc.newAPIHadoopFile(
-      lulz,
+      args(0),
       classOf[WARCInputFormat],
       classOf[LongWritable],
       classOf[WARCWritable]
     )
 
-    val numPages = warc.count()
+    val numPages = warc
+      .map(x => (1,1))
+      .count()
 
     println("Records in warc: %s".format(numPages))
   }

@@ -20,7 +20,8 @@ object AppDetector {
 
   // TODO(aianus) create an implication graph (ie. 1C-Bitrix implies PHP)
 
-  def detect(body: String): Set[String] = {
+  def detect(response: String): Set[String] = {
+    val body = response.split("\r\n\r\n").apply(1)
     val htmlResults = detectApps(htmlApps, body)
 
     val doc = Jsoup.parse(body)

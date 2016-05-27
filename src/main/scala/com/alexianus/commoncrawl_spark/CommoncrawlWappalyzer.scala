@@ -55,11 +55,11 @@ object CommoncrawlWappalyzer {
       (content: Array[Byte], _: Array[Byte]) => content,
       numPartitions
     )
-    .flatMap { case (domain: String, body: Array[Byte]) =>
+    .flatMap { case (domain: String, response: Array[Byte]) =>
       Try {
-        val bodyString = new String(body, "UTF-8")
+        val responseString = new String(response, "UTF-8")
         analyzed_pages += 1L
-        (domain, AppDetector.detect(bodyString))
+        (domain, AppDetector.detect(responseString))
       }.toOption
     }
     .reduceByKey(

@@ -31,7 +31,7 @@ object AppDetector {
       .flatMap(detectApps(scriptApps, _))
       .toSet
 
-    scriptResults ++ htmlResults
+    scriptResults | htmlResults
   }
 
   def detectApps(regexMap: Map[Regex, String], content: String): Set[String] = {

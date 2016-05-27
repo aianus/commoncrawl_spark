@@ -59,9 +59,9 @@ object CommoncrawlLocalTest {
           (domain, AppDetector.detect(responseString))
         }.toOption
       }
-      .reduceByKey(
-        (s1: Set[String], s2: Set[String]) => s1.union(s2)
-      )
+      // Dedupe  via set union
+      .reduceByKey(_ | _)
+      .coalesce(10)
       .saveAsTextFile(outPath)
   }
 }

@@ -62,9 +62,7 @@ object CommoncrawlWappalyzer {
         (domain, AppDetector.detect(responseString))
       }.toOption
     }
-    // Dedupe  via set union
-    .reduceByKey(_ | _)
-    .coalesce(10)
+    .coalesce(200)
     .saveAsTextFile(outPath + UUID.randomUUID().toString.substring(0,6))
   }
 }

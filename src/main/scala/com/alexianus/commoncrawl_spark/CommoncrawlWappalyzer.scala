@@ -1,6 +1,7 @@
 package com.alexianus.commoncrawl_spark
 
 import java.net.URL
+import java.util.UUID
 
 import com.alexianus.wappalyzer.AppDetector
 import com.martinkl.warc._
@@ -16,13 +17,17 @@ object CommoncrawlWappalyzer {
     val conf = new SparkConf()
       .setAppName("CommoncrawlWappalyzer")
       .set("spark.default.parallelism", "80")
-    val sc = new SparkContext
+      .set("spark.speculation", "true")
+      .set("spark.speculation.interval", "1000ms")
+    val sc = new SparkContext(conf)
 
     val response_pages = sc.accumulator(0L, "response_pages")
     val unique_domains = sc.accumulator(0L, "unique_domains")
     val analyzed_pages = sc.accumulator(0L, "analyzed_pages")
 
     val pathPattern = java.net.URLDecoder.decode(args(0), "UTF-8")
+    val outPath     = args(1)
+    val numPartitions = Integer.valueOf(args(2))
 
     val warc = sc.newAPIHadoopFile(
       pathPattern,
@@ -46,10 +51,9 @@ object CommoncrawlWappalyzer {
       }
     }
     // Discard all but one body per domain
-    .combineByKey(
-      identity,
+    .reduceByKey(
       (content: Array[Byte], _: Array[Byte]) => content,
-      (content: Array[Byte], _: Array[Byte]) => content
+      numPartitions
     )
     .flatMap { case (domain: String, body: Array[Byte]) =>
       Try {
@@ -58,11 +62,9 @@ object CommoncrawlWappalyzer {
         (domain, AppDetector.detect(bodyString))
       }.toOption
     }
-    .combineByKey(
-      identity,
-      (s1: Set[String], s2: Set[String]) => s1.union(s2),
+    .reduceByKey(
       (s1: Set[String], s2: Set[String]) => s1.union(s2)
     )
-    .saveAsTextFile(args(1))
+    .saveAsTextFile(outPath + UUID.randomUUID().toString.substring(0,6))
   }
 }

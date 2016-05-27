@@ -14,13 +14,15 @@ object CommoncrawlLocalTest {
   def main(args: Array[String]) {
     val conf = new SparkConf()
       .setAppName("CommoncrawlLocalTest")
-    val sc = new SparkContext
+    val sc = new SparkContext(conf)
 
     val response_pages = sc.accumulator(0L, "response_pages")
     val unique_domains = sc.accumulator(0L, "unique_domains")
     val analyzed_pages = sc.accumulator(0L, "analyzed_pages")
 
     val pathPattern = java.net.URLDecoder.decode(args(0), "UTF-8")
+    val outPath     = args(1)
+    val numPartitions = Integer.valueOf(args(2))
 
     val warc = sc.newAPIHadoopFile(
       pathPattern,
@@ -46,10 +48,9 @@ object CommoncrawlLocalTest {
 
     sc.parallelize(sample)
       // Discard all but one body per domain
-      .combineByKey(
-        identity,
+      .reduceByKey(
         (content: Array[Byte], _: Array[Byte]) => content,
-        (content: Array[Byte], _: Array[Byte]) => content
+        numPartitions
       )
       .flatMap { case (domain: String, body: Array[Byte]) =>
         Try {
@@ -58,11 +59,9 @@ object CommoncrawlLocalTest {
           (domain, AppDetector.detect(bodyString))
         }.toOption
       }
-      .combineByKey(
-        identity,
-        (s1: Set[String], s2: Set[String]) => s1.union(s2),
+      .reduceByKey(
         (s1: Set[String], s2: Set[String]) => s1.union(s2)
       )
-      .saveAsTextFile(args(1))
+      .saveAsTextFile(outPath)
   }
 }

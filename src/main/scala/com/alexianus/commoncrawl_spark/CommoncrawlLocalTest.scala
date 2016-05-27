@@ -12,7 +12,8 @@ import scala.util.Try
 
 object CommoncrawlLocalTest {
   def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("CommoncrawlLocalTest")
+    val conf = new SparkConf()
+      .setAppName("CommoncrawlLocalTest")
     val sc = new SparkContext
 
     val response_pages = sc.accumulator(0L, "response_pages")

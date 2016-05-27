@@ -13,7 +13,9 @@ import scala.util.Try
 object CommoncrawlWappalyzer {
 
   def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("CommoncrawlWappalyzer")
+    val conf = new SparkConf()
+      .setAppName("CommoncrawlWappalyzer")
+      .set("spark.default.parallelism", "80")
     val sc = new SparkContext
 
     val response_pages = sc.accumulator(0L, "response_pages")

@@ -16,7 +16,6 @@ object CommoncrawlWappalyzer {
   def main(args: Array[String]) {
     val conf = new SparkConf()
       .setAppName("CommoncrawlWappalyzer")
-      .set("spark.default.parallelism", "80")
       .set("spark.speculation", "true")
       .set("spark.speculation.interval", "1000ms")
     val sc = new SparkContext(conf)

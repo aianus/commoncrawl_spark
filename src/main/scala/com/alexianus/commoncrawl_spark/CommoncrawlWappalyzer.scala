@@ -16,34 +16,51 @@ object CommoncrawlWappalyzer {
     val conf = new SparkConf().setAppName("CommoncrawlWappalyzer")
     val sc = new SparkContext
 
-    val num_pages = sc.accumulator(0)
+    val response_pages = sc.accumulator(0L, "response_pages")
+    val unique_domains = sc.accumulator(0L, "unique_domains")
+    val analyzed_pages = sc.accumulator(0L, "analyzed_pages")
 
+    val pathPattern = java.net.URLDecoder.decode(args(0), "UTF-8")
 
     val warc = sc.newAPIHadoopFile(
-      args(0),
+      pathPattern,
       classOf[WARCInputFormat],
       classOf[LongWritable],
       classOf[WARCWritable]
     )
 
     warc
-      .flatMap { case (_, record: WARCWritable) =>
-          val r = record.getRecord
-          if (r.getHeader.getRecordType == "response") Some(r) else None
-      }
-      .flatMap { record =>
+    .flatMap { case (_, record: WARCWritable) =>
+      val r = record.getRecord
+      if (r.getHeader.getRecordType == "response") {
         Try {
-          val domain = new URL(record.getHeader.getTargetURI).getHost
-          val body = new String(record.getContent, "UTF-8")
-          num_pages += 1
-          (domain, AppDetector.detect(body))
+          // Ignore subdomains
+          val domain = new URL(r.getHeader.getTargetURI).getHost.split("\\.").reverse.take(2).reverse.mkString(".")
+          response_pages += 1L
+          (domain, r.getContent)
         }.toOption
+      } else {
+        None
       }
-      .combineByKey(
-        identity,
-        (s1: Set[String], s2: Set[String]) => s1.union(s2),
-        (s1: Set[String], s2: Set[String]) => s1.union(s2)
-      )
-      .saveAsTextFile(args(1))
+    }
+    // Discard all but one body per domain
+    .combineByKey(
+      identity,
+      (content: Array[Byte], _: Array[Byte]) => content,
+      (content: Array[Byte], _: Array[Byte]) => content
+    )
+    .flatMap { case (domain: String, body: Array[Byte]) =>
+      Try {
+        val bodyString = new String(body, "UTF-8")
+        analyzed_pages += 1L
+        (domain, AppDetector.detect(bodyString))
+      }.toOption
+    }
+    .combineByKey(
+      identity,
+      (s1: Set[String], s2: Set[String]) => s1.union(s2),
+      (s1: Set[String], s2: Set[String]) => s1.union(s2)
+    )
+    .saveAsTextFile(args(1))
   }
 }

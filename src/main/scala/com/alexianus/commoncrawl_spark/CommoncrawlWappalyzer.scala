@@ -61,7 +61,6 @@ object CommoncrawlWappalyzer {
         (domain, AppDetector.detect(responseString))
       }.toOption
     }
-    .coalesce(200)
     .saveAsTextFile(outPath + UUID.randomUUID().toString.substring(0,6))
   }
 }
